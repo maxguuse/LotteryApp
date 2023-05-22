@@ -1,4 +1,4 @@
-#include "Ticket.h"
+#include "../include/Ticket.h"
 
 Ticket::Ticket(const int & id, const int & prizeAmount, std::array<int, 5> firstRankNumbers, const int & secondRankNumber)
 {
