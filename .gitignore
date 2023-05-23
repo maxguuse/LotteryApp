@@ -34,3 +34,5 @@
 *.out
 *.app
 LotteryApp/main
+/cmake-build-debug/
+/cmake-build-release/
