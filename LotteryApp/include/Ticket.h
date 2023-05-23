@@ -14,7 +14,7 @@ private:
     int secondRankNumber;    
 public:
     Ticket(const int & id, const int & prizeAmount, std::array<int, 5> firstRankNumbers, const int & secondRankNumber);
-    const std::string to_string();
+    std::string to_string();
 };
 
 #endif // !TICKET_H

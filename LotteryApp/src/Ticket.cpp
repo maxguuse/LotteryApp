@@ -1,4 +1,4 @@
-#include "../include/Ticket.h"
+#include "Ticket.h"
 
 Ticket::Ticket(const int & id, const int & prizeAmount, std::array<int, 5> firstRankNumbers, const int & secondRankNumber)
 {
@@ -8,7 +8,7 @@ Ticket::Ticket(const int & id, const int & prizeAmount, std::array<int, 5> first
     this->secondRankNumber = secondRankNumber;
 }
 
-const std::string Ticket::to_string()
+std::string Ticket::to_string()
 {
     std::stringstream outputString;
 
