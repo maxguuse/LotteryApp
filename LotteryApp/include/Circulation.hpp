@@ -1,8 +1,7 @@
-#ifndef CIRCULATION_H
-#define CIRCULATION_H
+#pragma once
 
-#include "CirculationType.h"
-#include "Ticket.h"
+#include "CirculationType.hpp"
+#include "Ticket.hpp"
 #include <array>
 #include <random>
 #include <ctime>
@@ -33,5 +32,3 @@ Circulation<container>::Circulation(const int &circulationId)
 template <template <typename Y, typename Allocator = std::allocator<Y>> class container>
 template <CirculationType circulationType>
 void Circulation<container>::start () { }
-
-#endif // !CIRCULATION_H
