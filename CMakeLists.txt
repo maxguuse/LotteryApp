@@ -9,6 +9,5 @@ include_directories(LotteryApp/tools)
 add_executable(LotteryApp
         LotteryApp/include/Circulation.hpp
         LotteryApp/include/Ticket.hpp
-        LotteryApp/src/Circulation.cpp
         LotteryApp/tools/CirculationType.hpp
-        LotteryApp/main.cpp)
+        LotteryApp/main.cpp LotteryApp/tools/TicketNums.hpp LotteryApp/include/Lottery.hpp)

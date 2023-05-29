@@ -2,6 +2,6 @@
 
 enum class CirculationType 
 {
-    Automatic,
-    Manual
+    Automatic = 1,
+    Manual = 2
 };

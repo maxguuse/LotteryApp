@@ -1,21 +1,18 @@
 #pragma once
 
-#include <array>
+#include "TicketNums.hpp"
 
 struct Ticket
 {
     const int id;
     const int prizeAmount;
-    const std::array<int, 5> firstRankNumbers;
-    const int secondRankNumber;
+    const TicketNums ticketNums;
 
     Ticket(const int & inputId,
            const int & inputPrizeAmount,
-           std::array<int, 5> inputFirstRankNumbers,
-           const int & inputSecondRankNumber)
+           TicketNums inputTicketNums)
            :
            id(inputId),
            prizeAmount(inputPrizeAmount),
-           firstRankNumbers(inputFirstRankNumbers),
-           secondRankNumber(inputSecondRankNumber) { }
+           ticketNums(std::move(inputTicketNums)) { }
 };
