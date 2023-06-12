@@ -33,6 +33,12 @@
 *.exe
 *.out
 *.app
+
+# Codeless files
 LotteryApp/main
+LotteryApp/circulations_count.txt
+
+# Directories
 /cmake-build-debug/
 /cmake-build-release/
+/LotteryApp/circulations/
