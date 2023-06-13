@@ -16,12 +16,10 @@ mt19937 randomEngine(dev());
 
 void main_screen();
 void circulation_screen();
-void search_screen();
+void search_screen(Circulation<vector> * circulation = nullptr);
 
 int main()
 {
-    //srand(time(nullptr));
-
     main_screen();
     return 0;
 }
@@ -46,6 +44,7 @@ void main_screen()
             cout << "Invalid input format. Try again.\n";
         } else if (selection != 1 && selection != 2)
         {
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
             cout << "Selection is out of range. Try again.\n";
         } else
         {
@@ -176,10 +175,49 @@ void circulation_screen()
         TicketNums inputNums(firstRankInputNumbers, secondRankInputNumber);
         circulation.addTicket(inputNums);
     }
+
+    search_screen(&circulation);
 }
 
-void search_screen()
+void search_screen(Circulation<vector> * circulation)
 {
+    if (circulation == nullptr)
+    {
+
+    }
+    else
+    {
+        cout << "You're executing search in circulation #" << circulation->id << endl;
+        cout << "Select type of search:\n"
+             << "1) By id\n"
+             << "2) By prize amount\n";
+
+
+        {
+            cout << "Enter id of ticket you're searching for(1 - " << circulation->ticketsAmount << ")\n";
+
+            int ticketId;
+
+            while (true) {
+                cout << ">> ";
+                cin >> ticketId;
+
+                if (cin.fail()) {
+                    cin.clear();
+                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                    cout << "Invalid input format. Try again.\n";
+                } else if (ticketId < 1 || ticketId > circulation->ticketsAmount) {
+                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                    cout << "Selection is out of range. Try again.\n";
+                } else {
+                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                    break;
+                }
+            }
+
+            cout << circulation->getTicket(ticketId).to_string();
+        }
+    }
 
 }
 

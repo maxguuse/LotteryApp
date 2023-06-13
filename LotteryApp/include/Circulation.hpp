@@ -15,25 +15,25 @@ class Circulation
 {
     const fs::path circulation_folder = "circulations";
 
+    fs::path current_circulation_path;
+    std::fstream circulationFile;
+
+    container<Ticket> tickets;
+    int maxTicketsId = 0;
+
+    void saveCirculation();
+public:
+    Circulation(const int &, TicketNums, const int &, const int &);
+    ~Circulation();
+
     const int id;
     const TicketNums winNums;
     const int prizeBase;
     const int ticketsAmount;
 
-    fs::path current_circulation_path;
-    std::fstream file;
-
-    container<Ticket> tickets;
-    int maxTicketsId = 0;
-
-    void writeTicketToFile(Ticket & ticket);
-public:
-    Circulation(const int &, TicketNums, const int &, const int &);
-    ~Circulation();
-
     const Ticket & addTicket(TicketNums);
     const container<Ticket> & getTickets();
-    const Ticket & getTicket(const int & ticketId);
+    Ticket & getTicket(const int & ticketId);
 };
 
 template <template <typename Y, typename Allocator = std::allocator<Y>> class container>
@@ -46,25 +46,26 @@ Circulation<container>::Circulation(const int & circId,
                                     winNums(std::move(circTicketNums)),
                                     prizeBase(circPrizeBase),
                                     ticketsAmount(circTicketsAmount)
-                                    {
-                                        using std::fstream;
+{
+    using std::fstream;
 
-                                        current_circulation_path = circulation_folder.string() + "/" + std::to_string(id) + ".txt";
+    current_circulation_path = circulation_folder.string() + "/" + std::to_string(id) + ".txt";
 
-                                        if (!fs::exists(current_circulation_path))
-                                        {
-                                            file.open(current_circulation_path, fstream::trunc | fstream::in | fstream::out);
-                                            file << ticketsAmount << "\n";
-                                            file.close();
-                                        }
+    if (!fs::exists(current_circulation_path))
+    {
+        TicketNums temp(winNums);
+        Ticket baseCircTicket(circTicketsAmount, circPrizeBase, temp);
 
-                                        file.open(current_circulation_path, fstream::app);
-                                    }
+        circulationFile.open(current_circulation_path, fstream::trunc | fstream::in | fstream::out);
+        circulationFile << baseCircTicket.to_string() << "\n";
+        circulationFile.close();
+    }
+}
 
 template <template <typename Y, typename Allocator = std::allocator<Y>> class container>
 Circulation<container>::~Circulation()
 {
-    file.close();
+    saveCirculation();
 }
 
 template <template <typename Y, typename Allocator = std::allocator<Y>> class container>
@@ -89,15 +90,9 @@ const Ticket & Circulation<container>::addTicket(TicketNums inputTicketNums)
 
     int prize = countOfWinNums < 2 ? 0 : prizeBase * countOfWinNums * 10;
     Ticket newTicket(++maxTicketsId, prize, inputTicketNums);
-    writeTicketToFile(newTicket);
+    circulationFile << newTicket.to_string() << "\n";
     tickets.push_back(newTicket);
     return *(tickets.end() - 1);
-}
-
-template <template <typename Y, typename Allocator = std::allocator<Y>> class container>
-void Circulation<container>::writeTicketToFile(Ticket &ticket)
-{
-    file << ticket.to_string() << "\n";
 }
 
 template <template <typename Y, typename Allocator = std::allocator<Y>> class container>
@@ -107,7 +102,19 @@ const container<Ticket> & Circulation<container>::getTickets()
 }
 
 template <template <typename Y, typename Allocator = std::allocator<Y>> class container>
-const Ticket & Circulation<container>::getTicket(const int & ticketId)
+Ticket & Circulation<container>::getTicket(const int & ticketId)
 {
     return tickets[ticketId - 1];
+}
+
+template <template <typename Y, typename Allocator = std::allocator<Y>> class container>
+void Circulation<container>::saveCirculation()
+{
+    circulationFile.open(current_circulation_path, std::fstream::app);
+
+    for (Ticket & ticket : tickets) {
+        circulationFile << ticket.to_string() << "\n";
+    }
+
+    circulationFile.close();
 }
