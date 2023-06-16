@@ -1,223 +1,246 @@
 #include <iostream>
 #include <limits>
-#include <fstream>
-#include <filesystem>
-#include <array>
 #include <random>
+#include <vector>
 
+#include "CirculationRepository.hpp"
 #include "Circulation.hpp"
-
-namespace fs = std::filesystem;
+#include "TicketNums.hpp"
 
 using namespace std;
 
-random_device dev;
-mt19937 randomEngine(dev());
+mt19937 randomEngine(time(nullptr));
+CirculationRepository<vector> repository;
 
-void main_screen();
-void circulation_screen();
-void search_screen(Circulation<vector> * circulation = nullptr);
+void createCirculation();
+void searchTicket();
+void searchTicketById(Circulation<vector> & circulation);
+void searchTicketByPrize(Circulation<vector> & circulation);
+
+void fillFirstRankNumbers(uniform_int_distribution<int> &distribution, array<int, 5> &firstRankNumbers);
+int enterNumber(int, int);
+int enterNumber();
 
 int main()
 {
-    main_screen();
-    return 0;
-}
-
-void main_screen()
-{
-    cout << "Select one of these options\n"
-         << "1) Start circulation.\n"
-         << "2) Search ticket.\n";
-
-    int selection;
-
     while (true)
     {
-        cout << ">> ";
-        cin >> selection;
+        cout << "Select desired option:\n"
+             << "1) Create new circulation\n"
+             << "2) Search through tickets and circulations\n"
+             << "3) Exit\n";
 
-        if (cin.fail())
+        int selection = enterNumber(1, 3);
+
+        switch (selection)
         {
-            cin.clear();
-            cin.ignore(numeric_limits<streamsize>::max(), '\n');
-            cout << "Invalid input format. Try again.\n";
-        } else if (selection != 1 && selection != 2)
-        {
-            cin.ignore(numeric_limits<streamsize>::max(), '\n');
-            cout << "Selection is out of range. Try again.\n";
-        } else
-        {
-            cin.ignore(numeric_limits<streamsize>::max(), '\n');
-            switch (selection) {
-                case 1:
-                    circulation_screen();
-                    break;
-                case 2:
-                    search_screen();
-                    break;
-                default:
-                    cout << "Unknown error.\n";
-                    break;
-            }
-            break;
+            case 1:
+                createCirculation();
+                break;
+            case 2:
+                searchTicket();
+                break;
+            case 3:
+                return 0;
         }
     }
 }
 
-void circulation_screen()
+void createCirculation()
 {
-    const fs::path circulations_count_path = "circulations_count.txt";
+    int currentCirculationId = repository.getCirculationsAmount() + 1;
 
     uniform_int_distribution<int> firstRankNumberDist(1, 36);
     uniform_int_distribution<int> secondRankNumberDist(1, 5);
     uniform_int_distribution<int> prizeBaseDist(20, 150);
 
-    fstream file;
-    int circulationId = 0;
+    array<int, 5> firstRankWinNumbers;
+    fillFirstRankNumbers(firstRankNumberDist, firstRankWinNumbers);
 
-    if (!fs::exists(circulations_count_path))
+    int secondRankWinNumber = secondRankNumberDist(randomEngine);
+
+    TicketNums winNums(firstRankWinNumbers,secondRankWinNumber);
+
+    int prizeBase = prizeBaseDist(randomEngine);
+
+    system("cls");
+    cout << "You started circulation #" << currentCirculationId 
+         << ", with following win numbers: " << winNums.to_string() << endl;
+    cout << "Enter desired number of tickets in circulation\n";
+
+    int countOfTickets = enterNumber();
+
+    if (countOfTickets > 5000)
     {
-        circulationId = 1;
+        cout << "Sorry, but you entered too large amount of tickets, " 
+             << "they will not be displayed, but still will be generated and saved\n";
+    }
 
-        file.open(circulations_count_path, fstream::out | fstream::in | fstream::trunc);
-        file << circulationId;
-        file.close();
+    Circulation<vector> newCirculation(
+            currentCirculationId,
+            winNums,
+            prizeBase,
+            countOfTickets
+    );
+
+    for (int i = 0; i < countOfTickets; i++)
+    {
+        array<int, 5> firstRankInputNumbers;
+        fillFirstRankNumbers(firstRankNumberDist, firstRankInputNumbers);
+
+        int secondRankInputNumber = secondRankNumberDist(randomEngine);
+
+        TicketNums inputNums(firstRankInputNumbers,secondRankInputNumber);
+
+        Ticket lastTicket = newCirculation.addTicket(inputNums);
+
+        if (countOfTickets <= 5000 && lastTicket.prizeAmount > 0)
+        {
+            cout << "Ticket #" << lastTicket.id
+                 << "\twon: " << lastTicket.prizeAmount
+                 << ",\twith numbers: " << lastTicket.ticketNums.to_string()
+                 << endl;
+        }
+    }
+    repository.addCirculation(newCirculation);
+}
+void searchTicket()
+{
+    if (repository.getCirculations().empty())
+    {
+        system("cls");
+        cout << "No circulations found\n\n";
+        return;
+    }
+
+    system("cls");
+    cout << "To find desired ticket, at first specify circulation number(1 - " 
+         << repository.getCirculationsAmount() << ")\n";
+    int circulationId = enterNumber(1, repository.getCirculationsAmount());
+
+    Circulation<vector> circulation = repository.getCirculation(circulationId);
+
+    system("cls");
+    cout << "Found circulation #" << circulation.id << ", now specify type of search\n"
+         << "1) By ticket id\n"
+         << "2) By ticket prize\n";
+
+    int typeOfSearch = enterNumber(1, 2);
+
+    switch (typeOfSearch)
+    {
+        case 1:
+            searchTicketById(circulation);
+            break;
+        case 2:
+            searchTicketByPrize(circulation);
+            break;
+    }
+}
+void searchTicketById(Circulation<vector> & circulation)
+{
+    system("cls");
+    cout << "To find desired ticket, specify ticket number(1 - " << circulation.ticketsAmount
+         << ")\n";
+    int ticketId = enterNumber(1, circulation.ticketsAmount);
+
+    Ticket ticket = circulation.getTicket(ticketId);
+
+    system("cls");
+    cout << "Found following information:"
+         << "\nTicket id: " << ticket.id
+         << "\nTicket numbers: " << ticket.ticketNums.to_string()
+         << "\nTicket prize amount: " << ticket.prizeAmount
+         << "\n\n";
+}
+void searchTicketByPrize(Circulation<vector> & circulation)
+{
+    vector<Ticket> allTickets = circulation.getTickets();
+    vector<Ticket> desiredTickets;
+
+    system("cls");
+    cout << "To find desired ticket, specify prize, that ticket has\n";
+    int prize = enterNumber();
+
+    for (const Ticket & ticket : allTickets)
+        if (ticket.prizeAmount == prize)
+            desiredTickets.push_back(ticket);
+
+    if (desiredTickets.empty())
+    {
+        system("cls");
+        cout << "No tickets found\n\n";
     }
     else
     {
-        file.open(circulations_count_path, fstream::out | fstream::in);
-
-        if (file.is_open()) file >> circulationId;
-        else cout << "Something went wrong\n";
-
-        circulationId++;
-        file.close();
-
-        file.open(circulations_count_path, fstream::out | fstream ::in | fstream::trunc);
-
-        if (file.is_open()) file << circulationId;
-        else cout << "Something went wrong\n";
-
-        file.close();
+        system("cls");
+        cout << "List of found tickets\n";
+        for (const Ticket & ticket : desiredTickets)
+        {
+            cout << "Id: \t" << ticket.id 
+                 << "\tTicket numbers: \t" << ticket.ticketNums.to_string() 
+                 << "\tPrize amount: \t" << ticket.prizeAmount << endl;
+        }
+        cout << endl;
     }
+}
 
-    cout << "You started circulation #" << circulationId << endl;
-    cout << "Enter desired number of tickets in circulation\n";
+void fillFirstRankNumbers(uniform_int_distribution<int> & distribution, array<int, 5> & firstRankNumbers)
+{
+    for (int i = 0; i < 5; i++)
+    {
+        int currentNum = distribution(randomEngine);
 
-    int countOfTickets = 0;
-
+        bool duplicate = false;
+        for (int j = 0; j < i; j++)
+        {
+            if (firstRankNumbers[j] == currentNum)
+            {
+                duplicate = true;
+                break;
+            }
+        }
+        if (!duplicate) firstRankNumbers[i] = currentNum;
+        else i--;
+    }
+}
+int enterNumber(int min, int max)
+{
+    int number;
     while (true)
     {
         cout << ">> ";
-        cin >> countOfTickets;
+        cin >> number;
 
         if (cin.fail())
         {
             cin.clear();
             cin.ignore(numeric_limits<streamsize>::max(), '\n');
             cout << "Invalid input format. Try again.\n";
-        } else
+        } else if (number < min || number > max)
         {
             cin.ignore(numeric_limits<streamsize>::max(), '\n');
-            break;
-        }
+            cout << "Selection is out of range. Try again.\n";
+        } else break;
     }
 
-    array<int, 5> firstRankWinNumbers;
-    int secondRankWinNumber = secondRankNumberDist(randomEngine);
-    int prizeBase = prizeBaseDist(randomEngine);
-
-    for (int i = 0; i < 5; i++)
-    {
-        int currentNum = firstRankNumberDist(randomEngine);
-
-        bool duplicate = false;
-        for (int j = 0; j < i; j++)
-        {
-            if (firstRankWinNumbers[j] == currentNum)
-            {
-                duplicate = true;
-                break;
-            }
-        }
-
-        if (!duplicate) firstRankWinNumbers[i] = currentNum;
-        else i--;
-    }
-
-    TicketNums winNums(firstRankWinNumbers, secondRankWinNumber);
-    Circulation<vector> circulation(circulationId, winNums, prizeBase, countOfTickets);
-
-    for (int i = 0; i < countOfTickets; i++)
-    {
-        array<int, 5> firstRankInputNumbers;
-        int secondRankInputNumber = secondRankNumberDist(randomEngine);
-
-        for (int k = 0; k < 5; k++)
-        {
-            int currentNum = firstRankNumberDist(randomEngine);
-
-            bool duplicate = false;
-            for (int j = 0; j < k; j++)
-            {
-                if (firstRankInputNumbers[j] == currentNum)
-                {
-                    duplicate = true;
-                    break;
-                }
-            }
-
-            if (!duplicate) firstRankInputNumbers[k] = currentNum;
-            else k--;
-        }
-
-        TicketNums inputNums(firstRankInputNumbers, secondRankInputNumber);
-        circulation.addTicket(inputNums);
-    }
-
-    search_screen(&circulation);
+    return number;
 }
-
-void search_screen(Circulation<vector> * circulation)
+int enterNumber()
 {
-    if (circulation == nullptr)
+    int number;
+    while (true)
     {
+        cout << ">> ";
+        cin >> number;
 
-    }
-    else
-    {
-        cout << "You're executing search in circulation #" << circulation->id << endl;
-        cout << "Select type of search:\n"
-             << "1) By id\n"
-             << "2) By prize amount\n";
-
-
+        if (cin.fail() || number < 0)
         {
-            cout << "Enter id of ticket you're searching for(1 - " << circulation->ticketsAmount << ")\n";
-
-            int ticketId;
-
-            while (true) {
-                cout << ">> ";
-                cin >> ticketId;
-
-                if (cin.fail()) {
-                    cin.clear();
-                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
-                    cout << "Invalid input format. Try again.\n";
-                } else if (ticketId < 1 || ticketId > circulation->ticketsAmount) {
-                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
-                    cout << "Selection is out of range. Try again.\n";
-                } else {
-                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
-                    break;
-                }
-            }
-
-            cout << circulation->getTicket(ticketId).to_string();
-        }
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            cout << "Invalid input format. Try again.\n";
+        } else break;
     }
 
+    return number;
 }
-

@@ -4,27 +4,17 @@
 #include "TicketNums.hpp"
 
 #include <iostream>
+#include <algorithm>
 #include <memory>
-#include <filesystem>
 #include <array>
-
-namespace fs = std::filesystem;
 
 template <template <typename Y, typename Allocator = std::allocator<Y>> class container>
 class Circulation
 {
-    const fs::path circulation_folder = "circulations";
-
-    fs::path current_circulation_path;
-    std::fstream circulationFile;
-
     container<Ticket> tickets;
     int maxTicketsId = 0;
-
-    void saveCirculation();
 public:
     Circulation(const int &, TicketNums, const int &, const int &);
-    ~Circulation();
 
     const int id;
     const TicketNums winNums;
@@ -45,28 +35,7 @@ Circulation<container>::Circulation(const int & circId,
                                     id(circId),
                                     winNums(std::move(circTicketNums)),
                                     prizeBase(circPrizeBase),
-                                    ticketsAmount(circTicketsAmount)
-{
-    using std::fstream;
-
-    current_circulation_path = circulation_folder.string() + "/" + std::to_string(id) + ".txt";
-
-    if (!fs::exists(current_circulation_path))
-    {
-        TicketNums temp(winNums);
-        Ticket baseCircTicket(circTicketsAmount, circPrizeBase, temp);
-
-        circulationFile.open(current_circulation_path, fstream::trunc | fstream::in | fstream::out);
-        circulationFile << baseCircTicket.to_string() << "\n";
-        circulationFile.close();
-    }
-}
-
-template <template <typename Y, typename Allocator = std::allocator<Y>> class container>
-Circulation<container>::~Circulation()
-{
-    saveCirculation();
-}
+                                    ticketsAmount(circTicketsAmount) { }
 
 template <template <typename Y, typename Allocator = std::allocator<Y>> class container>
 const Ticket & Circulation<container>::addTicket(TicketNums inputTicketNums)
@@ -90,7 +59,6 @@ const Ticket & Circulation<container>::addTicket(TicketNums inputTicketNums)
 
     int prize = countOfWinNums < 2 ? 0 : prizeBase * countOfWinNums * 10;
     Ticket newTicket(++maxTicketsId, prize, inputTicketNums);
-    circulationFile << newTicket.to_string() << "\n";
     tickets.push_back(newTicket);
     return *(tickets.end() - 1);
 }
@@ -105,16 +73,4 @@ template <template <typename Y, typename Allocator = std::allocator<Y>> class co
 Ticket & Circulation<container>::getTicket(const int & ticketId)
 {
     return tickets[ticketId - 1];
-}
-
-template <template <typename Y, typename Allocator = std::allocator<Y>> class container>
-void Circulation<container>::saveCirculation()
-{
-    circulationFile.open(current_circulation_path, std::fstream::app);
-
-    for (Ticket & ticket : tickets) {
-        circulationFile << ticket.to_string() << "\n";
-    }
-
-    circulationFile.close();
 }
